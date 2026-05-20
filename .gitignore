@@ -1,0 +1,39 @@
+*.s
+*.o
+*.i90
+*.mod
+*.swp
+*.pyc
+*~
+src/buildinfo.h
+
+# build folders
+bin/*
+ini/*
+lib/*
+share/*
+build*/
+tutorials/*
+
+# tags
+ctags.txt
+
+# core dump files
+core
+
+# documentation
+_build/
+
+# cmake temporary files
+CMakeCache.txt
+CMakeFiles/
+
+# integrated development environment (ide)
+.vscode/
+nbproject/
+
+# Claude Code session files
+.claude/
+
+# Temp check file (mangled Windows path artifact)
+C*UsersandreAppDataLocalTemphopr_check.txt

@@ -1,0 +1,70 @@
+{
+    "version": 3,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 22,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "hopr_config_debug_nohdf5_nocgns",
+            "displayName": "hopr configure: default debug build no cgns no hdf5",
+            "hidden": false,
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "LIBS_BUILD_HDF5": "Off",
+                "LIBS_USE_CGNS": "Off"
+            }
+        },
+        {
+            "name": "hopr_config_release_nohdf5_nocgns",
+            "displayName": "hopr configure: default release build no cgns no hdf5",
+            "hidden": false,
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "LIBS_BUILD_HDF5": "Off",
+                "LIBS_USE_CGNS": "Off"
+            }
+        },
+        {
+            "name": "windows-ucrt64",
+            "displayName": "Windows MSYS2 UCRT64 — Release with CGNS (self-built, Fortran module support)",
+            "hidden": false,
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build_windows",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE":         "Release",
+                "LIBS_BUILD_HDF5":          "Off",
+                "LIBS_USE_CGNS":            "On",
+                "LIBS_BUILD_CGNS":          "On",
+                "LIBS_BUILD_CGNS_INT":      "32",
+                "CMAKE_EXE_LINKER_FLAGS":   "-Wl,--stack,268435456",
+                "HOPR_UNITTESTS":           "Off",
+                "HOPR_BUILDTESTS":          "Off"
+            }
+        },
+        {
+            "name": "windows-ucrt64-nocgns",
+            "displayName": "Windows MSYS2 UCRT64 — Release without CGNS (fastest initial build)",
+            "hidden": false,
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build_windows_nocgns",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE":         "Release",
+                "LIBS_BUILD_HDF5":          "Off",
+                "LIBS_USE_CGNS":            "Off",
+                "CMAKE_EXE_LINKER_FLAGS":   "-Wl,--stack,268435456",
+                "HOPR_UNITTESTS":           "Off",
+                "HOPR_BUILDTESTS":          "Off"
+            }
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "HOPR_ctest",
+            "displayName": "Test HOPR running ctest ",
+            "configurePreset": "hopr_config_release_nohdf5_nocgns",
+            "output": {"outputOnFailure": true}
+        }
+    ]
+}

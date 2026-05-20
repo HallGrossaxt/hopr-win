@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HOPR &mdash; Windows Port Change Documentation</title>
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      color: #1a1a2e;
+      background: #f5f6fa;
+    }
+
+    /* ── Layout ── */
+    header {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
+      color: #e0e0e0;
+      padding: 36px 48px 28px;
+      border-bottom: 3px solid #e94560;
+    }
+    header h1 { font-size: 26px; font-weight: 700; color: #ffffff; letter-spacing: 0.5px; }
+    header .subtitle { margin-top: 6px; font-size: 13px; color: #a0a8c0; }
+    header .meta { margin-top: 14px; display: flex; gap: 28px; font-size: 12px; color: #8090b0; }
+    header .meta span strong { color: #c0cce0; }
+
+    nav {
+      background: #16213e;
+      padding: 0 48px;
+      display: flex;
+      gap: 0;
+      flex-wrap: wrap;
+      border-bottom: 1px solid #0f3460;
+    }
+    nav a {
+      display: inline-block;
+      color: #a0b0d0;
+      text-decoration: none;
+      padding: 10px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      border-bottom: 2px solid transparent;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    nav a:hover { color: #ffffff; border-bottom-color: #e94560; }
+
+    main { max-width: 1040px; margin: 32px auto; padding: 0 24px 64px; }
+
+    /* ── Cards / Sections ── */
+    section {
+      background: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      margin-bottom: 28px;
+      overflow: hidden;
+    }
+    .section-header {
+      background: #1a1a2e;
+      color: #ffffff;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-header .icon {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700;
+      flex-shrink: 0;
+    }
+    .section-header h2 { font-size: 15px; font-weight: 600; }
+    .section-header .file-tag {
+      margin-left: auto;
+      font-size: 11px;
+      background: rgba(255,255,255,0.12);
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-family: "Cascadia Code", "Consolas", monospace;
+      color: #a0c0ff;
+    }
+    .section-body { padding: 20px 24px; }
+
+    /* ── Change Blocks ── */
+    .change-block { margin-bottom: 24px; }
+    .change-block:last-child { margin-bottom: 0; }
+    .change-title {
+      font-weight: 700;
+      font-size: 13px;
+      color: #0f3460;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 3px;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+    }
+    .badge-new    { background: #d4edda; color: #155724; }
+    .badge-mod    { background: #fff3cd; color: #856404; }
+    .badge-cmake  { background: #cce5ff; color: #004085; }
+    .badge-guard  { background: #f8d7da; color: #721c24; }
+
+    p.rationale {
+      font-size: 13px;
+      color: #444;
+      margin-bottom: 10px;
+    }
+
+    /* ── Code Blocks ── */
+    .diff-wrap { border-radius: 6px; overflow: hidden; margin-top: 8px; border: 1px solid #dee2e6; }
+    .diff-filename {
+      background: #343a40;
+      color: #adb5bd;
+      font-family: "Cascadia Code", "Consolas", monospace;
+      font-size: 11px;
+      padding: 5px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .diff-filename .lines { color: #6c757d; font-size: 10px; }
+    pre {
+      margin: 0;
+      overflow-x: auto;
+      font-family: "Cascadia Code", "Consolas", "Courier New", monospace;
+      font-size: 12px;
+      line-height: 1.55;
+      tab-size: 4;
+    }
+    .code-linux  { background: #fff8e1; }
+    .code-win    { background: #e8f5e9; }
+    .code-shared { background: #f8f9fa; }
+
+    /* per-line colouring */
+    .ln { display: block; padding: 0 12px; }
+    .ln-add    { background: #c6efce; color: #276221; }
+    .ln-add::before   { content: "+ "; }
+    .ln-del    { background: #ffc7ce; color: #9c0006; }
+    .ln-del::before   { content: "- "; }
+    .ln-ctx    { color: #444; }
+    .ln-ctx::before   { content: "  "; }
+    .ln-guard  { background: #fff3cd; color: #664d03; }
+    .ln-guard::before { content: "  "; }
+    .ln-win    { background: #d6f0ff; color: #00527a; }
+    .ln-win::before   { content: "  "; }
+    .ln-lnx    { background: #fff8e1; color: #5a4000; }
+    .ln-lnx::before   { content: "  "; }
+
+    /* ── Summary Table ── */
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    thead tr { background: #1a1a2e; color: #ffffff; }
+    thead th { padding: 10px 14px; text-align: left; font-weight: 600; }
+    tbody tr:nth-child(even) { background: #f8f9fa; }
+    tbody tr:hover { background: #e8f0fe; }
+    tbody td { padding: 9px 14px; border-bottom: 1px solid #e9ecef; vertical-align: top; }
+    td.file-cell { font-family: "Cascadia Code", "Consolas", monospace; font-size: 11px; color: #0f3460; }
+    td.impact-high   { border-left: 3px solid #e94560; }
+    td.impact-medium { border-left: 3px solid #f5a623; }
+    td.impact-low    { border-left: 3px solid #27ae60; }
+
+    /* ── Callout boxes ── */
+    .callout {
+      border-radius: 6px;
+      padding: 12px 16px;
+      margin: 12px 0;
+      font-size: 13px;
+    }
+    .callout-info    { background: #e7f3ff; border-left: 4px solid #2196f3; color: #0d47a1; }
+    .callout-warn    { background: #fff8e1; border-left: 4px solid #ffc107; color: #5d4037; }
+    .callout-success { background: #e8f5e9; border-left: 4px solid #4caf50; color: #1b5e20; }
+
+    /* ── Icon colours ── */
+    .ic-1  { background: #e94560; }
+    .ic-2  { background: #0f3460; }
+    .ic-3  { background: #f5a623; }
+    .ic-4  { background: #27ae60; }
+    .ic-5  { background: #8e44ad; }
+    .ic-6  { background: #2980b9; }
+
+    hr.divider { border: none; border-top: 1px solid #e9ecef; margin: 18px 0; }
+
+    footer {
+      text-align: center;
+      font-size: 11px;
+      color: #999;
+      padding: 20px;
+      border-top: 1px solid #dee2e6;
+      margin-top: 40px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════ HEADER -->
+<header>
+  <h1>HOPR &mdash; Windows Port Change Documentation</h1>
+  <div class="subtitle">
+    Comprehensive record of all source-level modifications made to port HOPR (High Order Preprocessor) from Linux to Windows (MSYS2 / UCRT64 / GFortran)
+  </div>
+  <div class="meta">
+    <span><strong>Project:</strong> HOPR v1.5.0</span>
+    <span><strong>Port started:</strong> 06 November 2025</span>
+    <span><strong>Document updated:</strong> 25 April 2026</span>
+    <span><strong>Target toolchain:</strong> MSYS2 UCRT64 &mdash; GFortran / GCC / Ninja</span>
+  </div>
+</header>
+
+<!-- ══════════════════════════════════════════════════════ NAV -->
+<nav>
+  <a href="#overview">Overview</a>
+  <a href="#stacksize-c">stacksize.c</a>
+  <a href="#globals-f90">globals.f90</a>
+  <a href="#setcompiler">SetCompiler.cmake</a>
+  <a href="#setlibraries">SetLibraries.cmake</a>
+  <a href="#findcgns">FindCGNS.cmake</a>
+  <a href="#src-cmake">src/CMakeLists.txt</a>
+  <a href="#linker-flags">Linker Flags</a>
+  <a href="#cgns-fortran">CGNS Fortran ABI</a>
+  <a href="#orientednode">OrientedNode Fix</a>
+  <a href="#uninit-tmp">Uninit Node%tmp</a>
+  <a href="#cmake-presets">CMakePresets</a>
+  <a href="#build-howto">Build How-To</a>
+  <a href="#summary">Summary</a>
+</nav>
+
+<main>
+
+<!-- ══════════════════════════════════════════════════════ OVERVIEW -->
+<section id="overview">
+  <div class="section-header">
+    <div class="icon ic-1">&#9873;</div>
+    <h2>Overview of the Windows Port</h2>
+  </div>
+  <div class="section-body">
+    <p class="rationale">
+      HOPR is a Fortran/C application originally developed and tested exclusively on Linux.
+      This document records every source-level change required to compile and run <code>hopr.exe</code>
+      under Windows using the MSYS2 UCRT64 environment (GFortran 14, GCC 14, Ninja, CMake 4.x).
+    </p>
+
+    <div class="callout callout-info">
+      <strong>Porting strategy &mdash; minimal invasive.</strong>
+      All Windows-specific code is isolated behind <code>#ifdef _WIN32</code> / <code>IF(WIN32)</code> guards.
+      Linux behaviour is entirely unchanged. No existing logic was removed or restructured.
+    </div>
+
+    <div class="callout callout-warn">
+      <strong>Upstream documentation note.</strong>
+      The upstream <code>docs/documentation/userguide/installation.md</code> still states
+      &ldquo;HOPR supports Linux-based systems only&rdquo;. This Windows port is an unofficial
+      extension and is not reflected in the official documentation.
+    </div>
+
+    <p class="rationale" style="margin-top:12px;">
+      The changes fall into eight distinct areas:
+    </p>
+    <ol style="margin:10px 0 0 22px; font-size:13px; line-height:2;">
+      <li><strong>Runtime stack management</strong> &mdash; <code>src/stacksize.c</code> (new Windows no-op path)</li>
+      <li><strong>Fortran/C interface</strong> &mdash; <code>src/globals.f90</code> (BIND(C) declaration)</li>
+      <li><strong>Compiler flags</strong> &mdash; <code>cmake/SetCompiler.cmake</code> (disable <code>-fstack-arrays</code> on Windows)</li>
+      <li><strong>Library detection &amp; build commands</strong> &mdash; <code>cmake/SetLibraries.cmake</code></li>
+      <li><strong>CGNS library search paths</strong> &mdash; <code>cmake/FindCGNS.cmake</code></li>
+      <li><strong>Build integration &amp; linker flags</strong> &mdash; <code>src/CMakeLists.txt</code> + CMake cache</li>
+      <li><strong>Periodic mesh connectivity</strong> &mdash; <code>src/mesh/mesh_connect.f90</code> (ASSOCIATED() fallbacks for GFortran 15 Windows)</li>
+      <li><strong>Node initialisation</strong> &mdash; <code>src/mesh/mesh_vars.f90</code> (zero-init <code>Node%tmp</code> to prevent false BC assignments from uninitialised heap memory)</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════ STACKSIZE.C -->
+<section id="stacksize-c">
+  <div class="section-header">
+    <div class="icon ic-2">1</div>
+    <h2>Runtime Stack Management</h2>
+    <span class="file-tag">src/stacksize.c</span>
+  </div>
+  <div class="section-body">
+
+    <div class="change-block">
+      <div class="change-title">
+        <span class="badge badge-mod">Modified</span>
+        Added Windows no-op path for <code>setstacksizeunlimited()</code>
+      </div>
+      <p class="rationale">
+        On Linux, HOPR calls <code>setstacksizeunlimited()</code> at startup to raise the process stack
+        to its hard limit via POSIX <code>setrlimit()</code>. This call is essential because GFortran
+        compiled with <code>-fstack-arrays</code> places large temporary arrays on the stack.
+      </p>
+      <p class="rationale">
+        On Windows, there is no POSIX <code>setrlimit</code> / <code>RLIMIT_STACK</code>. The stack size
+        is instead fixed at link time in the PE (Portable Executable) header.  Attempting to include
+        <code>&lt;sys/resource.h&gt;</code> on MinGW/UCRT64 will fail with a compilation error.
+        The function therefore becomes a no-op; the required stack size is set via the linker flag
+        <code>-Wl,--stack,268435456</code> (256&nbsp;MB) instead.
+      </p>
+
+      <div class="diff-wrap">
+        <div class="diff-filename">
+          src/stacksize.c
+          <span class="lines">full file &mdash; 17 lines</span>
+        </div>
+        <pre class="code-shared"><span class="ln ln-guard">#ifdef _WIN32</span>
+<span class="ln ln-win">/* On Windows the stack size is managed by the PE header / linker flags.   */</span>
+<span class="ln ln-win">/* There is no POSIX setrlimit, so this is a no-op.                        */</span>
+<span class="ln ln-win">void setstacksizeunlimited(void) { }</span>
+<span class="ln ln-guard">#else</span>
+<span class="ln ln-lnx">#include &lt;sys/resource.h&gt;</span>
+<span class="ln ln-lnx"></span>
+<span class="ln ln-lnx">void setstacksizeunlimited(void)</span>
+<span class="ln ln-lnx">{</span>
+<span class="ln ln-lnx">   struct rlimit limit;</span>
+<span class="ln ln-lnx">   getrlimit(RLIMIT_STACK, &amp;limit);</span>
+<span class="ln ln-lnx">   limit.rlim_cur=limit.rlim_max;</span>
+<span class="ln ln-lnx">   setrlimit(RLIMIT_STACK, &amp;limit);</span>
+<span class="ln ln-lnx">}</span>
+<span class="ln ln-guard">#endif</span></pre>
+      </div>
+
+      <div class="callout callout-success" style="margin-top:10px;">
+        <strong>Key point:</strong> The <code>#ifdef _WIN32</code> guard is defined automatically by
+        MinGW-w64 / UCRT64 on all Windows builds. No CMake flag or manual define is required.
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════ GLOBALS.F90 -->
+<section id="globals-f90">
+  <div class="section-header">
+    <div class="icon ic-3">2</div>
+    <h2>Fortran/C Interface Declaration</h2>
+    <span class="file-tag">src/globals.f90</span>
+  </div>
+  <div class="section-body">
+
+    <div class="change-block">
+      <div class="change-title">
+        <span class="badge badge-new">Added</span>
+        C-interoperable interface block for <code>setstacksizeunlimited</code> (lines&nbsp;103&ndash;106)
+      </div>
+      <p class="rationale">
+        Fortran cannot directly call a C function without an explicit interface declaration that uses
+        <code>BIND(C)</code>. This interface block was added to <code>globals.f90</code> so that the
+        Fortran entry point <code>hopr.f90</code> can call the C function.
+        The declaration itself is platform-neutral; the platform-specific behaviour lives entirely in
+        the C translation unit.
+      </p>
+
+      <div class="diff-wrap">
+        <div class="diff-filename">
+          src/globals.f90 &mdash; lines 103&ndash;106
+          <span class="lines">added block</span>
+        </div>
+        <pre class="code-shared"><span class="ln ln-add">INTERFACE</span>
+<span class="ln ln-add">  SUBROUTINE setstacksizeunlimited() BIND(C)</span>
+<span class="ln ln-add">  END SUBROUTINE setstacksizeunlimited</span>
+<span class="ln ln-add">END INTERFACE</span></pre>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════ SETCOMPILER -->
+<section id="setcompiler">
+  <div class="section-header">
+    <div class="icon ic-4">3</div>
+    <h2>Fortran Compiler Flags &mdash; Disable <code>-fstack-arrays</code> on Windows</h2>
+    <span class="file-tag">cmake/SetCompiler.cmake</span>
+  </div>
+  <div class="section-body">
+
+    <div class="change-block">
+      <div class="change-title">
+        <span class="badge badge-cmake">CMake</span>
+        Conditional <code>-fstack-arrays</code> flag &mdash; Windows branch (lines&nbsp;82&ndash;93)
+      </div>
+      <p class="rationale">
+        GFortran&rsquo;s <code>-fstack-arrays</code> flag instructs the compiler to allocate all
+        local and temporary arrays on the thread stack rather than the heap.  This is a significant
+        performance optimisation on Linux where <code>setstacksizeunlimited()</code> has already
+        expanded the stack to its hard limit.
+      </p>
+      <p class="rationale">
+        On Windows the stack size is fixed at link time (256&nbsp;MB, see
+        <a href="#linker-flags">Section&nbsp;6</a>).  Enabling <code>-fstack-arrays</code> with this
+        constraint causes stack overflow when processing large meshes.  The flag is therefore
+        <strong>omitted from all release-type build configurations on Windows</strong>.
+      </p>
+
+      <div class="diff-wrap">
+        <div class="diff-filename">
+          cmake/SetCompiler.cmake &mdash; lines 82&ndash;93 (GNU compiler block)
+          <span class="lines">WIN32 branch added</span>
+        </div>
+        <pre class="code-shared"><span class="ln ln-ctx">  ! initialize all variables as signalling NaNs to force the user to correctly initialize</span>
+<span class="ln ln-win">  ! On Windows the stack size cannot be raised at runtime (setstacksizeunlimited is a no-op).</span>
+<span class="ln ln-win">  ! -fstack-arrays puts all temporary/allocatable arrays on the stack, which causes stack overflow</span>
+<span class="ln ln-win">  ! for large meshes on Windows. Use heap allocation there instead.</span>
+<span class="ln ln-guard">  IF(WIN32)</span>
+<span class="ln ln-win">    SET(CMAKE_Fortran_FLAGS_RELEASE        "${CMAKE_Fortran_FLAGS}     -O3 ${HOPR_INSTRUCTION} -finline-functions")</span>
+<span class="ln ln-win">    SET(CMAKE_Fortran_FLAGS_RELWITHDEBINFO "${CMAKE_Fortran_FLAGS} -g  -O3 ${HOPR_INSTRUCTION} -finline-functions -ffpe-trap=invalid,zero,overflow -fbacktrace")</span>
+<span class="ln ln-win">    SET(CMAKE_Fortran_FLAGS_PROFILE        "${CMAKE_Fortran_FLAGS} -pg -O3 ${HOPR_INSTRUCTION} -finline-functions")</span>
+<span class="ln ln-guard">  ELSE()</span>
+<span class="ln ln-lnx">    SET(CMAKE_Fortran_FLAGS_RELEASE        "${CMAKE_Fortran_FLAGS}     -O3 ${HOPR_INSTRUCTION} -finline-functions -fstack-arrays")</span>
+<span class="ln ln-lnx">    SET(CMAKE_Fortran_FLAGS_RELWITHDEBINFO "${CMAKE_Fortran_FLAGS} -g  -O3 ${HOPR_INSTRUCTION} -finline-functions -fstack-arrays -ffpe-trap=invalid,zero,overflow -fbacktrace")</span>
+<span class="ln ln-lnx">    SET(CMAKE_Fortran_FLAGS_PROFILE        "${CMAKE_Fortran_FLAGS} -pg -O3 ${HOPR_INSTRUCTION} -finline-functions -fstack-arrays")</span>
+<span class="ln ln-guard">  ENDIF()</span></pre>
+      </div>
+
+      <table style="margin-top:14px; font-size:12px;">
+        <thead>
+          <tr>
+            <th>Build type</th>
+            <th>Linux flag set includes</th>
+            <th>Windows flag set includes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Release</td>
+            <td><code>-O3 -finline-functions <strong>-fstack-arrays</strong></code></td>
+            <td><code>-O3 -finline-functions</code></td>
+          </tr>
+          <tr>
+            <td>RelWithDebInfo</td>
+            <td><code>-g -O3 -finline-functions <strong>-fstack-arrays</strong> -ffpe-trap=... -fbacktrace</code></td>
+            <td><code>-g -O3 -finline-functions -ffpe-trap=... -fbacktrace</code></td>
+          </tr>
+          <tr>
+            <td>Profile</td>
+            <td><code>-pg -O3 -finline-functions <strong>-fstack-arrays</strong></code></td>
+            <td><code>-pg -O3 -finline-functions</code></td>
+          </tr>
+          <tr>
+            <td>Debug / Sanitize</td>
+            <td colspan="2" style="text-align:center; color:#555;">Unchanged &mdash; same flags on both platforms</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════ SETLIBRARIES -->
+<section id="setlibraries">
+  <div class="section-header">
+    <div class="icon ic-5">4</div>
+    <h2>Library Detection &amp; External Build Commands</h2>
+    <span class="file-tag">cmake/SetLibraries.cmake</span>
+  </div>
+  <div class="section-body">
+
+    <!-- 4a: HDF5 readelf -->
+    <div class="change-block">
+      <div class="change-title">
+        <span class="badge badge-cmake">CMake</span>
+        Skip <code>readelf</code> / <code>nm</code> ZLIB check on Windows (line&nbsp;121)
+      </div>
+      <p class="rationale">
+        After finding a system HDF5 library, the build system normally inspects the HDF5 binary with
+        <code>readelf</code> (Linux) or <code>nm</code> (macOS) to determine whether HDF5 was compiled
+        with ZLIB support and thus whether ZLIB must be linked separately.
+        Neither tool is available in a standard Windows environment.
+        A <code>NOT WIN32</code> guard skips the inspection entirely; on Windows ZLIB detection falls
+        back to a hard-coded result of <em>not found</em> (i.e., ZLIB is not linked separately).
+      </p>
+
+      <div class="diff-wrap">
+        <div class="diff-filename">
+          cmake/SetLibraries.cmake &mdash; HDF5 ZLIB detection block (approx. lines 121&ndash;129)
+          <span class="lines">NOT WIN32 guard added</span>
+        </div>
+        <pre class="code-shared"><span class="ln ln-del">  IF(NOT "${HDF5_C_LIBRARY_hdf5_c}" STREQUAL "")</span>
+<span class="ln ln-add">  IF(NOT "${HDF5_C_LIBRARY_hdf5_c}" STREQUAL "" AND NOT WIN32)</span>
+<span class="ln ln-ctx">    IF(APPLE)</span>
+<span class="ln ln-ctx">      EXECUTE_PROCESS(COMMAND nm -gU      ${HDF5_C_LIBRARY_hdf5_c}</span>
+<span class="ln ln-ctx">                      COMMAND grep inflate ...)</span>
+<span class="ln ln-ctx">    ELSE()</span>
+<span class="ln ln-ctx">      EXECUTE_PROCESS(COMMAND readelf -Ws ${HDF5_C_LIBRARY_hdf5_c}</span>
+<span class="ln ln-ctx">                      COMMAND grep inflate ...)</span>
+<span class="ln ln-ctx">    ENDIF()</span>
+<span class="ln ln-ctx">  ELSE()</span>
+<span class="ln ln-ctx">    SET(GREP_RESULT 1)   ! treat as &ldquo;not linked against zlib&rdquo;</span>
+<span class="ln ln-ctx">  ENDIF()</span></pre>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- 4b: HDF5 build cmd -->
+    <div class="change-block">
+      <div class="change-title">
+        <span class="badge badge-cmake">CMake</span>
+        Platform-conditional build command for self-built HDF5 (approx. lines&nbsp;196&ndash;200)
+      </div>
+      <p class="rationale">
+        When HOPR falls back to compiling HDF5 from source (because no system HDF5 is found),
+        the upstream code used <code>make -jN</code> as the build command.  GNU <code>make</code>
+        is not available on Windows; the cross-platform equivalent is <code>cmake --build</code>.
+      </p>
+
+      <div class="diff-wrap">
+        <div class="diff-filename">
+          cmake/SetLibraries.cmake &mdash; HDF5 self-build command
+          <span class="lines">WIN32 branch added</span>
+        </div>
+        <pre class="code-shared"><span class="ln ln-add">  IF(WIN32)</span>
+<span class="ln ln-win">    SET(HDF5_BUILD_CMD ${CMAKE_COMMAND} --build &lt;BINARY_DIR&gt; -j${N})</span>
+<span class="ln ln-add">  ELSE()</span>
+<span class="ln ln-lnx">    SET(HDF5_BUILD_CMD make -j${N})</span>
+<span class="ln ln-add">  ENDIF()</span></pre>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- 4c: LAPACK build cmd -->
+    <div class="change-block">
+      <div class="change-title">
+        <span class="badge badge-cmake">CMake</span>
+        Platform-conditional build command for self-built LAPACK (approx. lines&nbsp;349&ndash;353)
+      </div>
+      <p class="rationale">
+        Identical change to the LAPACK self-build path for the same reason: <code>make</code> is
+        replaced by <code>cmake --build</code> when building on Windows.
+      </p>
+
+      <div class="diff-wrap">
+        <div class="diff-filename">
+          cmake/SetLibraries.cmake &mdash; LAPACK self-build command
+          <span class="lines">WIN32 branch added</span>
+        </div>
+        <pre class="code-shared"><span class="ln ln-add">  IF(WIN32)</span>
+<span class="ln ln-win">    SET(LAPACK_BUILD_CMD ${CMAKE_COMMAND} --build &lt;BINARY_DIR&gt; -j${N})</span>
+<span class="ln ln-add">  ELSE()</span>
+<span class="ln ln-lnx">    SET(LAPACK_BUILD_CMD make -j${N})</span>
+<span class="ln ln-add">  ENDIF()</span></pre>
+      </div>
+
+      <div class="callout callout-info" style="margin-top:10px;">
+        In the current working build HDF5 and LAPACK/OpenBLAS are both satisfied by the MSYS2 UCRT64
+        package manager (<code>pacman</code>), so these self-build paths are not exercised.
+        The guards remain important for reproducibility on machines without pre-installed packages.
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════ FINDCGNS -->
+<section id="findcgns">
+  <div class="section-header">
+    <div class="icon ic-6">5</div>
+    <h2>CGNS Library Search Paths</h2>
+    <span class="file-tag">cmake/FindCGNS.cmake</span>
+  </div>
+  <div class="section-body">
+
+    <div class="change-block">
+      <div class="change-title">
+        <span class="badge badge-new">Added</span>
+        MSYS2 UCRT64 and MinGW64 paths to <code>find_path</code> / <code>find_library</code>
+      </div>
+      <p class="rationale">
+        The upstream <code>FindCGNS.cmake</code> searched only standard Unix paths
+        (<code>/usr/local/include</code>, <code>/usr/include</code>, etc.).
+        These do not exist as Windows filesystem paths.  Two MSYS2 environments are added
+        so that CMake can locate the CGNS library installed via <code>pacman</code> without
+        requiring the user to set environment variables manually.
+      </p>
+
+      <div class="diff-wrap">
+        <div class="diff-filename">
+          cmake/FindCGNS.cmake &mdash; full file (include search)
+          <span class="lines">lines 8&ndash;17</span>
+        </div>
+        <pre class="code-shared"><span class="ln ln-ctx">find_path(CGNS_INCLUDE_DIR</span>
+<span class="ln ln-ctx">  NAMES cgnslib.h</span>
+<span class="ln ln-ctx">  HINTS $ENV{CGNS_DIR}/include</span>
+<span class="ln ln-ctx">        $ENV{CGNS_ROOT}/include</span>
+<span class="ln ln-ctx">        /usr/local/include</span>
+<span class="ln ln-ctx">        /usr/include</span>
+<span class="ln ln-add">        C:/msys64/ucrt64/include</span>
+<span class="ln ln-add">        C:/msys64/mingw64/include</span>
+<span class="ln ln-ctx">  DOC "CGNS include directory"</span>
+<span class="ln ln-ctx">)</span></pre>
+      </div>
+
+      <div class="diff-wrap" style="margin-top:10px;">
+        <div class="diff-filename">
+          cmake/FindCGNS.cmake &mdash; library search
+          <span class="lines">lines 20&ndash;30</span>
+        </div>
+        <pre class="code-shared"><span class="ln ln-ctx">find_library(CGNS_LIBRARY</span>
+<span class="ln ln-ctx">  NAMES cgns</span>
+<span class="ln ln-ctx">  HINTS $ENV{CGNS_DIR}/lib</span>
+<span class="ln ln-ctx">        $ENV{CGNS_ROOT}/lib</span>
+<span class="ln ln-ctx">        /usr/local/lib</span>
+<span class="ln ln-ctx">        /usr/lib</span>
+<span class="ln ln-add">        C:/msys64/ucrt64/lib</span>
+<span class="ln ln-add">        C:/msys64/mingw64/lib</span>
+<span class="ln ln-ctx">  DOC "CGNS library"</span>
+<span class="ln ln-ctx">)</span></pre>
+      </div>
+
+      <div class="callout callout-warn" style="margin-top:10px;">
+        <strong>Installation prerequisite:</strong> CGNS must be installed in MSYS2 before configuring:
+        <br><code style="font-size:12px;">pacman -S mingw-w64-ucrt-x86_64-cgns</code>
+        <br>If the variable <code>CGNS_DIR</code> or <code>CGNS_ROOT</code> is set in the environment,
+        those paths are probed first and take precedence over the hardcoded MSYS2 paths.
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════ SRC CMAKELISTS -->
+<section id="src-cmake">
+  <div class="section-header">
+    <div class="icon ic-1">6</div>
+    <h2>Build Integration &mdash; <code>stacksizelib</code> Static Library</h2>
+    <span class="file-tag">src/CMakeLists.txt</span>
+  </div>
+  <div class="section-body">
+
+    <div class="change-block">
+      <div class="change-title">
+        <span class="badge badge-new">Added</span>
+        Separate <code>stacksizelib</code> target; linked into <code>hopr</code> executable
+      </div>
+      <p class="rationale">
+        <code>stacksize.c</code> is compiled as a dedicated static library target
+        (<code>stacksizelib</code>) rather than being included in the general C object library
+        (<code>hoprlibC</code>).  This keeps the platform-shim cleanly separated and ensures
+        correct linking order: the main executable depends explicitly on both <code>hoprlib</code>
+        and <code>stacksizelib</code>.
+      </p>
+
+      <div class="diff-wrap">
+        <div class="diff-filename">
+          src/CMakeLists.txt &mdash; lines 53&ndash;54, 72&ndash;78
+          <span class="lines">added target &amp; dependency</span>
+        </div>
+        <pre class="code-shared"><span class="ln ln-ctx">FILE(GLOB_RECURSE hoprC   ./src/sfc/*.c</span>
+<span class="ln ln-add">                          ./src/globals/stacksize.c)</span>
+<span class="ln ln-ctx">...</span>
+<span class="ln ln-add">ADD_LIBRARY(stacksizelib STATIC ./src/stacksize.c)</span>
+<span class="ln ln-add">SET_TARGET_PROPERTIES(stacksizelib PROPERTIES LINKER_LANGUAGE C</span>
+<span class="ln ln-add">                                              COMPILE_OPTIONS "-fPIC"</span>
+<span class="ln ln-add">                                              CMAKE_POSITION_INDEPENDENT_CODE ON)</span>
+<span class="ln ln-ctx"></span>
+<span class="ln ln-ctx">ADD_EXEC(        hopr ./src/hopr.f90)</span>
+<span class="ln ln-add">ADD_DEPENDENCIES(hopr hoprlib stacksizelib)</span></pre>
+      </div>
+
+      <p class="rationale" style="margin-top:10px;">
+        The <code>add_exec()</code> function (line&nbsp;22) also links <code>stacksizelib</code>
+        unconditionally into every executable target:
+      </p>
+
+      <div class="diff-wrap">
+        <div class="diff-filename">
+          src/CMakeLists.txt &mdash; add_exec() function, line 22
+        </div>
+        <pre class="code-shared"><span class="ln ln-add">  TARGET_LINK_LIBRARIES(${target} hoprlib stacksizelib ${linkedlibs})</span></pre>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════ LINKER FLAGS -->
+<section id="linker-flags">
+  <div class="section-header">
+    <div class="icon ic-4">7</div>
+    <h2>Windows Stack Size &mdash; Linker Flag</h2>
+    <span class="file-tag">CMakeCache.txt (build_windows)</span>
+  </div>
+  <div class="section-body">
+
+    <div class="change-block">
+      <div class="change-title">
+        <span class="badge badge-mod">Config</span>
+        <code>CMAKE_EXE_LINKER_FLAGS</code> set to <code>-Wl,--stack,268435456</code>
+      </div>
+      <p class="rationale">
+        Because <code>setstacksizeunlimited()</code> is a no-op on Windows, the required stack
+        space must be reserved at link time.  The flag <code>-Wl,--stack,268435456</code> passes
+        the <code>--stack 268435456</code> option to the MinGW linker, which embeds a
+        <strong>256&nbsp;MB</strong> stack reservation in the PE header of <code>hopr.exe</code>.
+      </p>
+      <p class="rationale">
+        This value was determined empirically to be sufficient for typical mesh sizes processed
+        without the <code>-fstack-arrays</code> flag active.  Users processing extremely large
+        meshes may need to increase this value by reconfiguring with a larger number.
+      </p>
+
+      <div class="diff-wrap">
+        <div class="diff-filename">
+          build_windows/CMakeCache.txt &mdash; linker flags entry
+        </div>
+        <pre class="code-shared"><span class="ln ln-add">CMAKE_EXE_LINKER_FLAGS:STRING=-Wl,--stack,268435456</span></pre>
+      </div>
+
+      <div class="callout callout-info" style="margin-top:10px;">
+        <strong>How to change the stack size:</strong> Pass <code>-DCMAKE_EXE_LINKER_FLAGS="-Wl,--stack,&lt;bytes&gt;"</code>
+        when running <code>cmake</code>, or edit the value directly in <code>CMakeCache.txt</code>
+        and re-run <code>ninja</code>.
+        <br>Example for 512&nbsp;MB: <code>-Wl,--stack,536870912</code>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════ CGNS FORTRAN ABI -->
+<section id="cgns-fortran">
+  <div class="section-header">
+    <div class="icon ic-5">8</div>
+    <h2>CGNS Fortran Module ABI Mismatch &mdash; Self-Build Required</h2>
+    <span class="file-tag">cmake/SetLibraries.cmake &bull; CMakePresets.json</span>
+  </div>
+  <div class="section-body">
+
+    <div class="change-block">
+      <div class="change-title">
+        <span class="badge badge-guard">Bug</span>
+        MSYS2 <code>libcgns.dll.a</code> has no Fortran module symbols &rarr; link failure
+      </div>
+      <p class="rationale">
+        When <code>LIBS_USE_CGNS=ON</code>, the build links against <code>C:/msys64/ucrt64/lib/libcgns.dll.a</code>
+        (installed via <code>pacman -S mingw-w64-ucrt-x86_64-cgns</code>).
+        The MSYS2 CGNS package is compiled as a <strong>C-only library</strong> and does not include
+        the Fortran <code>cgns.mod</code> module file or the corresponding Fortran module symbol table
+        (<code>__cgns_MOD_cg_*</code>).
+      </p>
+      <p class="rationale">
+        HOPR's <code>src/readin/readin_CGNS.f90</code> uses the Fortran module interface (<code>USE CGNS</code>)
+        rather than raw C bindings, so the linker fails with dozens of
+        <code>undefined reference to __cgns_MOD_cg_close_f</code> errors.
+      </p>
+
+      <div class="diff-wrap">
+        <div class="diff-filename">Linker error (excerpt)</div>
+        <pre class="code-shared"><span class="ln ln-del">ld.exe: undefined reference to `__cgns_MOD_cg_version_f'</span>
+<span class="ln ln-del">ld.exe: undefined reference to `__cgns_MOD_cg_open_f'</span>
+<span class="ln ln-del">ld.exe: undefined reference to `__cgns_MOD_cg_close_f' (×40+)</span></pre>
+      </div>
+
+      <div class="change-title" style="margin-top:18px;">
+        <span class="badge badge-new">Fix</span>
+        Use self-built CGNS with <code>-DCGNS_ENABLE_FORTRAN=ON</code>
+      </div>
+      <p class="rationale">
+        The CMake build system already contains a complete self-build path for CGNS
+        (triggered by <code>LIBS_BUILD_CGNS=ON</code>) that downloads CGNS 4.4.0 from GitHub
+        and compiles it with <code>-DCGNS_ENABLE_FORTRAN=ON</code>.
+        This produces a static <code>libcgns.a</code> <em>and</em> a <code>cgns.mod</code>
+        module file compiled by the same gfortran version used for HOPR itself —
+        eliminating the ABI mismatch.
+      </p>
+
+      <div class="diff-wrap">
+        <div class="diff-filename">cmake/SetLibraries.cmake &mdash; self-build CGNS arguments (existing, no change needed)</div>
+        <pre class="code-shared"><span class="ln ln-ctx">CMAKE_ARGS  -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}</span>
+<span class="ln ln-ctx">            -DCMAKE_Fortran_COMPILER=${CMAKE_Fortran_COMPILER}</span>
+<span class="ln ln-ctx">            -DCGNS_ENABLE_FORTRAN=ON          ! produces cgns.mod compatible with host gfortran</span>
+<span class="ln ln-ctx">            -DCGNS_BUILD_SHARED=OFF</span>
+<span class="ln ln-ctx">            -DCGNS_ENABLE_HDF5=ON</span>
+<span class="ln ln-ctx">            ...</span></pre>
+      </div>
+
+      <div class="callout callout-warn" style="margin-top:10px;">
+        <strong>First-time build takes ~5 minutes</strong> to download and compile CGNS 4.4.0.
+        Subsequent builds are instant (cmake detects the pre-built <code>libcgns.a</code>).
+        Requires internet access during the initial cmake configure step.
+      </div>
+
+      <div class="callout callout-success" style="margin-top:8px;">
+        <strong>Configure with self-built CGNS:</strong><br>
+        <code>cmake --preset windows-ucrt64</code>
+        &nbsp;&nbsp;(uses the new preset added in Section&nbsp;10)<br>
+        or manually:<br>
+        <code>cmake -S . -B build_windows -DLIBS_USE_CGNS=ON -DLIBS_BUILD_CGNS=ON -DCMAKE_EXE_LINKER_FLAGS="-Wl,--stack,268435456"</code>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════ ORIENTEDNODE -->
+<section id="orientednode">
+  <div class="section-header">
+    <div class="icon ic-3">9</div>
+    <h2><code>ASSOCIATED()</code> False Negatives &mdash; OrientedNode Pointer Check</h2>
+    <span class="file-tag">src/mesh/mesh_connect.f90</span>
+  </div>
+  <div class="section-body">
+
+    <div class="change-block">
+      <div class="change-title">
+        <span class="badge badge-guard">Bug</span>
+        Two-argument <code>ASSOCIATED(P,Q)</code> returns <code>.FALSE.</code> for same-target pointers on Windows
+      </div>
+      <p class="rationale">
+        After converting tetrahedral elements to hexahedra via <code>SplitToHex=T</code> and building
+        periodic boundary meshes, <code>ConnectMesh()</code> crashes with:
+      </p>
+      <div class="diff-wrap">
+        <div class="diff-filename">Runtime abort</div>
+        <pre class="code-shared"><span class="ln ln-del">Problem with OrientedNode on periodic side (master)!</span></pre>
+      </div>
+      <p class="rationale" style="margin-top:10px;">
+        <strong>Root cause:</strong> The periodic node orientation logic calls
+        <code>ASSOCIATED(nSide%Node(1)%np, Side%connection%Node(iNode)%np)</code>
+        to check whether the slave node and the master's dummy connection node are the same
+        <code>tNode</code> object after <code>GlobalUniqueNodes</code> pointer remapping.
+        GFortran 15 on Windows returns <code>.FALSE.</code> for this two-argument form
+        in certain pointer-of-struct aliasing patterns even when both arguments target the
+        same memory address.  (The one-argument <code>ASSOCIATED(P)</code> null check works
+        correctly; only the identity comparison is affected.)
+      </p>
+      <p class="rationale">
+        <strong>Affected mesh types:</strong> Cartesian meshes using <code>elemtype=104</code>
+        (linear tetrahedra) with <code>SplitToHex=T</code> and at least one periodic BC.
+      </p>
+
+      <div class="change-title" style="margin-top:16px;">
+        <span class="badge badge-new">Fix</span>
+        Three-level fallback chain after the <code>ASSOCIATED()</code> check
+      </div>
+      <p class="rationale">
+        Three additional checks are inserted after the <code>ASSOCIATED</code> test in both
+        the slave-side branch and the master-side branch of <code>ConnectMesh()</code>.
+        They fire only when <code>ASSOCIATED</code> returns false; in the common case (Linux
+        or a correct Windows pointer comparison) they are never reached.
+      </p>
+      <ol style="font-size:13px; margin:8px 0 12px 24px; line-height:2.0;">
+        <li><strong><code>%tmp</code> NodeID comparison</strong> &mdash;
+            after the first pass of <code>ConnectMesh</code> resets all node <code>%tmp</code>
+            to 0 and the second pass assigns a unique integer NodeID per live <code>tNode</code>
+            object, two pointers that target the same object share the same NodeID.</li>
+        <li><strong><code>%ind</code> comparison</strong> &mdash;
+            after <code>GlobalUniqueNodes</code> both merged nodes have
+            <code>ind = MAX(original_inds)</code>, which is the same positive value.</li>
+        <li><strong><code>SAMEPOINT()</code> coordinate comparison</strong> &mdash;
+            last resort; uses <code>SpaceQuandt * PP_MeshTolerance</code> tolerance.</li>
+      </ol>
+
+      <div class="diff-wrap">
+        <div class="diff-filename">
+          src/mesh/mesh_connect.f90 &mdash; master-side branch (representative excerpt)
+        </div>
+        <pre class="code-shared"><span class="ln ln-ctx">    ELSE !Side is master periodic, nSide is slave</span>
+<span class="ln ln-ctx">      fNode=0</span>
+<span class="ln ln-ctx">      DO iNode=1,nSide%nNodes</span>
+<span class="ln ln-ctx">        IF(ASSOCIATED(nSide%Node(1)%np,Side%connection%Node(iNode)%np)) fNode=iNode</span>
+<span class="ln ln-ctx">      END DO</span>
+<span class="ln ln-add">      ! Windows fallback 1: ConnectMesh NodeID — same %tmp = same tNode object</span>
+<span class="ln ln-add">      IF(fNode.EQ.0) THEN</span>
+<span class="ln ln-add">        DO iNode=1,Side%nNodes</span>
+<span class="ln ln-add">          IF(nSide%Node(1)%np%tmp .EQ. Side%connection%Node(iNode)%np%tmp) THEN</span>
+<span class="ln ln-add">            fNode=iNode; EXIT</span>
+<span class="ln ln-add">          END IF</span>
+<span class="ln ln-add">        END DO</span>
+<span class="ln ln-add">      END IF</span>
+<span class="ln ln-add">      ! Windows fallback 2: ind comparison after GlobalUniqueNodes merge</span>
+<span class="ln ln-add">      IF(fNode.EQ.0) THEN</span>
+<span class="ln ln-add">        DO iNode=1,Side%nNodes</span>
+<span class="ln ln-add">          IF(nSide%Node(1)%np%ind .EQ. Side%connection%Node(iNode)%np%ind) THEN</span>
+<span class="ln ln-add">            fNode=iNode; EXIT</span>
+<span class="ln ln-add">          END IF</span>
+<span class="ln ln-add">        END DO</span>
+<span class="ln ln-add">      END IF</span>
+<span class="ln ln-add">      ! Windows fallback 3: coordinate comparison within mesh tolerance</span>
+<span class="ln ln-add">      IF(fNode.EQ.0) THEN</span>
+<span class="ln ln-add">        DO iNode=1,Side%nNodes</span>
+<span class="ln ln-add">          IF(SAMEPOINT(nSide%Node(1)%np%x,Side%connection%Node(iNode)%np%x)) THEN</span>
+<span class="ln ln-add">            fNode=iNode; EXIT</span>
+<span class="ln ln-add">          END IF</span>
+<span class="ln ln-add">        END DO</span>
+<span class="ln ln-add">      END IF</span>
+<span class="ln ln-ctx">      IF(fNode.EQ.0)CALL abort(__STAMP__,'Problem with OrientedNode on periodic side (master)!')</span></pre>
+      </div>
+
+      <div class="callout callout-success" style="margin-top:10px;">
+        <strong>Test cases fixed by this change (combined with Section&nbsp;10):</strong>
+        <code>CHE_drift_diffusion_explicit-FV/periodic_box_free-stream_split2hex</code>,
+        <code>WEK_PIC_maxwell/2D_periodic_CVWM_split2hex</code>.
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════ UNINIT TMP -->
+<section id="uninit-tmp">
+  <div class="section-header">
+    <div class="icon ic-4">10</div>
+    <h2>Uninitialized <code>Node%tmp</code> &mdash; False Periodic-BC Assignments</h2>
+    <span class="file-tag">src/mesh/mesh_vars.f90</span>
+  </div>
+  <div class="section-body">
+
+    <div class="change-block">
+      <div class="change-title">
+        <span class="badge badge-guard">Bug</span>
+        Windows heap does not zero-fill; garbage <code>%tmp</code> causes wrong BCs on interior faces
+      </div>
+      <p class="rationale">
+        <code>meshTemplate=3</code> creates six face-centre nodes (9&ndash;14) for each Cartesian
+        hex cell via <code>getNewNode()</code>.  After allocation, <code>cartmesh.f90</code> sets
+        <code>node(11)%np%tmp = 20</code> (eta-minus marker) <em>only</em> when the cell is on the
+        y = 0 boundary.  For interior cells the field is left at its post-<code>ALLOCATE</code>
+        value.
+      </p>
+      <p class="rationale">
+        On Linux the allocator (glibc) zero-fills new pages, so <code>%tmp = 0</code> by accident.
+        On Windows (MinGW/CRT) the heap does <em>not</em> zero-fill, so <code>%tmp</code> can contain
+        arbitrary bit patterns.  The boundary-condition check in <code>cartmesh.f90</code>
+        (lines&nbsp;711&ndash;734) reads the decimal digits of <code>%tmp</code> as a bitmask to
+        decide which boundary a side face is on:
+      </p>
+      <div class="diff-wrap">
+        <div class="diff-filename">cartmesh.f90 &mdash; BC bitmask check (simplified)</div>
+        <pre class="code-shared"><span class="ln ln-ctx">! iSide=2 checks "tens digit of tmp == 2"  (eta-minus / y=0 flag)</span>
+<span class="ln ln-ctx">IF( (MOD(node%tmp, 100) / 10) .EQ. iSide ) onBnd = .TRUE.</span></pre>
+      </div>
+      <p class="rationale">
+        When an interior face-centre node has a garbage <code>%tmp</code> whose tens digit
+        happens to be 2, the face is falsely tagged as a y-periodic boundary face.
+        <code>SplitTetraToHex</code> then copies the y-periodic BC onto the corresponding
+        sub-hex face, creating a spurious <em>periodic master side</em> with nodes that are
+        entirely interior to the domain.
+        This interior master side gets a dummy connection at y + VV<sub>y</sub> &gt; 1,
+        outside the domain — no slave node can match it.
+        The sorted <code>SideConnect</code> array therefore contains two identical master sides
+        (from two hexes sharing boundary face nodes) that get incorrectly paired with each other
+        instead of with the true slave, causing the <em>OrientedNode (master)</em> abort.
+      </p>
+
+      <div class="change-title" style="margin-top:16px;">
+        <span class="badge badge-new">Fix</span>
+        Initialise <code>Node%tmp = 0</code> in <code>getNewNode()</code>
+      </div>
+
+      <div class="diff-wrap">
+        <div class="diff-filename">src/mesh/mesh_vars.f90 &mdash; getNewNode() (1 line added)</div>
+        <pre class="code-shared"><span class="ln ln-ctx">ALLOCATE(Node)</span>
+<span class="ln ln-ctx">Node%ind=0</span>
+<span class="ln ln-add">Node%tmp=0</span>
+<span class="ln ln-ctx">Node%refCount=0</span></pre>
+      </div>
+
+      <div class="callout callout-info" style="margin-top:10px;">
+        <strong>Why only <code>%tmp</code>?</strong>
+        The other integer fields (<code>%ind</code>, <code>%refCount</code>) are already
+        explicitly zeroed in the same subroutine.  <code>%tmp</code> was the sole field left
+        uninitialised; it is reused for several different purposes (BC detection bitmask,
+        SFC sort index, ConnectMesh NodeID) and each use assumes a well-defined starting value.
+      </div>
+
+      <div class="callout callout-success" style="margin-top:8px;">
+        <strong>Test cases fixed (combined with Section&nbsp;9):</strong>
+        <code>CHE_drift_diffusion_explicit-FV/periodic_box_free-stream_split2hex</code>,
+        <code>WEK_PIC_maxwell/2D_periodic_CVWM_split2hex</code>.
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════ CMAKE PRESETS -->
+<section id="cmake-presets">
+  <div class="section-header">
+    <div class="icon ic-6">11</div>
+    <h2>Windows CMake Presets</h2>
+    <span class="file-tag">CMakePresets.json</span>
+  </div>
+  <div class="section-body">
+
+    <div class="change-block">
+      <div class="change-title">
+        <span class="badge badge-new">Added</span>
+        Two Windows configure presets: full CGNS and no-CGNS
+      </div>
+      <p class="rationale">
+        The upstream <code>CMakePresets.json</code> contained only generic debug/release presets
+        with CGNS disabled.  Two Windows-specific presets were added:
+      </p>
+      <ul style="font-size:13px; margin:8px 0 12px 22px; line-height:1.9;">
+        <li><code>windows-ucrt64</code> — Release build with self-built CGNS (full functionality).
+            Use this for production hopr.exe.</li>
+        <li><code>windows-ucrt64-nocgns</code> — Release without CGNS (fast rebuild, ~1 min).
+            Suitable when only Cartesian and Gambit meshes are needed.</li>
+      </ul>
+
+      <div class="diff-wrap">
+        <div class="diff-filename">CMakePresets.json &mdash; new presets (added)</div>
+        <pre class="code-shared"><span class="ln ln-add">{</span>
+<span class="ln ln-add">  "name": "windows-ucrt64",</span>
+<span class="ln ln-add">  "displayName": "Windows MSYS2 UCRT64 — Release with CGNS (self-built)",</span>
+<span class="ln ln-add">  "generator": "Ninja",</span>
+<span class="ln ln-add">  "binaryDir": "${sourceDir}/build_windows",</span>
+<span class="ln ln-add">  "cacheVariables": {</span>
+<span class="ln ln-add">    "CMAKE_BUILD_TYPE":       "Release",</span>
+<span class="ln ln-add">    "LIBS_BUILD_HDF5":        "Off",</span>
+<span class="ln ln-add">    "LIBS_USE_CGNS":          "On",</span>
+<span class="ln ln-add">    "LIBS_BUILD_CGNS":        "On",</span>
+<span class="ln ln-add">    "LIBS_BUILD_CGNS_INT":    "32",</span>
+<span class="ln ln-add">    "CMAKE_EXE_LINKER_FLAGS": "-Wl,--stack,268435456",</span>
+<span class="ln ln-add">    "HOPR_UNITTESTS":         "Off",</span>
+<span class="ln ln-add">    "HOPR_BUILDTESTS":        "Off"</span>
+<span class="ln ln-add">  }</span>
+<span class="ln ln-add">}</span></pre>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════ BUILD HOW-TO -->
+<section id="build-howto">
+  <div class="section-header">
+    <div class="icon ic-4">&#9654;</div>
+    <h2>Build Instructions (MSYS2 UCRT64)</h2>
+  </div>
+  <div class="section-body">
+
+    <div class="callout callout-info">
+      <strong>Prerequisites:</strong> MSYS2 UCRT64 shell with the following packages installed:<br>
+      <code>pacman -S mingw-w64-ucrt-x86_64-toolchain mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja mingw-w64-ucrt-x86_64-hdf5 mingw-w64-ucrt-x86_64-openblas</code><br>
+      <em>Note: Do NOT install <code>mingw-w64-ucrt-x86_64-cgns</code> — use the self-built CGNS instead.</em>
+    </div>
+
+    <div class="change-block" style="margin-top:14px;">
+      <div class="change-title">Full build with CGNS support (recommended)</div>
+      <div class="diff-wrap">
+        <div class="diff-filename">MSYS2 UCRT64 terminal</div>
+        <pre class="code-shared"><span class="ln ln-ctx">cd /c/Data/PRJ/hopr-win/hopr-master</span>
+<span class="ln ln-ctx"></span>
+<span class="ln ln-ctx"># Configure (downloads and builds CGNS ~5 min first time)</span>
+<span class="ln ln-ctx">cmake --preset windows-ucrt64</span>
+<span class="ln ln-ctx"></span>
+<span class="ln ln-ctx"># Build</span>
+<span class="ln ln-ctx">ninja -C build_windows</span>
+<span class="ln ln-ctx"></span>
+<span class="ln ln-ctx"># Binary location</span>
+<span class="ln ln-ctx"># build_windows/bin/hopr.exe</span></pre>
+      </div>
+    </div>
+
+    <div class="change-block">
+      <div class="change-title">Fast build without CGNS (for Cartesian / Gambit meshes only)</div>
+      <div class="diff-wrap">
+        <div class="diff-filename">MSYS2 UCRT64 terminal</div>
+        <pre class="code-shared"><span class="ln ln-ctx">cmake --preset windows-ucrt64-nocgns</span>
+<span class="ln ln-ctx">ninja -C build_windows_nocgns</span></pre>
+      </div>
+    </div>
+
+    <div class="change-block">
+      <div class="change-title">Rebuild after source changes only (no reconfigure needed)</div>
+      <div class="diff-wrap">
+        <div class="diff-filename">MSYS2 UCRT64 terminal</div>
+        <pre class="code-shared"><span class="ln ln-ctx">ninja -C build_windows</span></pre>
+      </div>
+    </div>
+
+    <div class="callout callout-warn" style="margin-top:10px;">
+      <strong>Known remaining limitations (10 test cases still failing out of 340):</strong>
+      <ul style="margin: 6px 0 0 18px; font-size:12px; line-height:1.8;">
+        <li><strong>4&rarr;1 mortar</strong> (3 cases) — <code>NonconformConnectMesh()</code> only supports 2&rarr;1 non-conforming interfaces.
+            Test cases: <code>NIG_PIC_maxwell_RK4/PML-2elem-Mortar</code>,
+            <code>NIG_PIC_maxwell_RK4_p_adaption/5elem-with-Mortar-1-to-4</code>,
+            <code>NIG_PIC_maxwell_RK4_p_adaption/PML-5elem-with-Mortar-1-to-4</code>.</li>
+        <li><strong>External mesh files missing</strong> (2 cases) — ANSA/Star-CD (<code>Mode=4</code>)
+            and Gambit (<code>Mode=2</code>) test cases that require <code>tildbox.inp</code> /
+            <code>export.neu</code> not bundled in the test suite:
+            <code>NIG_tracking_DSMC/ANSA_box</code>,
+            <code>CHE_DSMC/Rotational_Reference_Frame_Temperature</code>.</li>
+        <li><strong>CGNS input files missing</strong> (2 cases) — <code>Mode=3</code> test cases
+            require CGNS source files not bundled in the test suite:
+            <code>NIG_tracking_DSMC/curved_planar</code>,
+            <code>NIG_tracking_DSMC/mortar_hexpress</code>.</li>
+        <li><strong><code>nocrosscombination</code> with 3 DEFVAR variables</strong> (3 cases) —
+            The DEFVAR substitution engine does not correctly separate combinations when
+            <code>nocrosscombination</code> links three variables simultaneously; the resulting
+            merged mesh has non-conforming inter-zone interfaces.  Workaround: split into separate
+            single-variant ini files.  Affected: <code>NIG_convtest_poisson/Dielectric_slab_FPC</code>,
+            <code>…/Dielectric_slab_FPC_via_VDL</code>,
+            <code>…/Dielectric_slab_FPC_via_VDL_different_factors</code>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════ SUMMARY TABLE -->
+<section id="summary">
+  <div class="section-header">
+    <div class="icon ic-2">&#9733;</div>
+    <h2>Complete Change Summary</h2>
+  </div>
+  <div class="section-body">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>File</th>
+          <th>Change type</th>
+          <th>Description</th>
+          <th>Root cause</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td class="file-cell impact-high">src/stacksize.c</td>
+          <td><span class="badge badge-mod">Modified</span></td>
+          <td>Added <code>#ifdef _WIN32</code> guard; Windows path is a no-op (no <code>setrlimit</code>)</td>
+          <td>POSIX <code>&lt;sys/resource.h&gt;</code> does not exist on Windows</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td class="file-cell impact-high">src/globals.f90</td>
+          <td><span class="badge badge-new">Added</span></td>
+          <td>Interface block with <code>BIND(C)</code> for <code>setstacksizeunlimited()</code></td>
+          <td>Fortran requires explicit C interop interface to call C functions</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td class="file-cell impact-high">cmake/SetCompiler.cmake</td>
+          <td><span class="badge badge-cmake">CMake</span></td>
+          <td><code>-fstack-arrays</code> excluded from Release/RelWithDebInfo/Profile builds on Windows</td>
+          <td>Fixed PE stack size cannot accommodate large temporary arrays on the stack</td>
+        </tr>
+        <tr>
+          <td>4a</td>
+          <td class="file-cell impact-medium">cmake/SetLibraries.cmake</td>
+          <td><span class="badge badge-cmake">CMake</span></td>
+          <td>Added <code>AND NOT WIN32</code> to HDF5 ZLIB detection; skips <code>readelf</code>/<code>nm</code></td>
+          <td><code>readelf</code> / <code>nm</code> are not available on Windows</td>
+        </tr>
+        <tr>
+          <td>4b</td>
+          <td class="file-cell impact-medium">cmake/SetLibraries.cmake</td>
+          <td><span class="badge badge-cmake">CMake</span></td>
+          <td>HDF5 self-build: <code>make -jN</code> &rarr; <code>cmake --build</code> on Windows</td>
+          <td>GNU <code>make</code> is not available on Windows</td>
+        </tr>
+        <tr>
+          <td>4c</td>
+          <td class="file-cell impact-medium">cmake/SetLibraries.cmake</td>
+          <td><span class="badge badge-cmake">CMake</span></td>
+          <td>LAPACK self-build: <code>make -jN</code> &rarr; <code>cmake --build</code> on Windows</td>
+          <td>GNU <code>make</code> is not available on Windows</td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td class="file-cell impact-low">cmake/FindCGNS.cmake</td>
+          <td><span class="badge badge-new">Added</span></td>
+          <td>MSYS2 UCRT64 and MinGW64 paths added to include and library search hints</td>
+          <td>CGNS installed via <code>pacman</code> lands in <code>C:/msys64/ucrt64/</code>, not <code>/usr/</code></td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td class="file-cell impact-high">src/CMakeLists.txt</td>
+          <td><span class="badge badge-new">Added</span></td>
+          <td>New <code>stacksizelib</code> static library target; linked into all executables</td>
+          <td>Isolates the platform-specific C shim; ensures correct link order</td>
+        </tr>
+        <tr>
+          <td>7</td>
+          <td class="file-cell impact-high">build_windows/CMakeCache.txt</td>
+          <td><span class="badge badge-mod">Config</span></td>
+          <td><code>CMAKE_EXE_LINKER_FLAGS=-Wl,--stack,268435456</code> (256&nbsp;MB PE stack)</td>
+          <td>Compensates for the no-op <code>setstacksizeunlimited()</code> at runtime</td>
+        </tr>
+        <tr>
+          <td>8</td>
+          <td class="file-cell impact-high">cmake/SetLibraries.cmake<br>CMakePresets.json</td>
+          <td><span class="badge badge-guard">Bug Fix</span></td>
+          <td>Use <code>LIBS_BUILD_CGNS=ON</code> to self-build CGNS with <code>-DCGNS_ENABLE_FORTRAN=ON</code> instead of MSYS2 system library</td>
+          <td>MSYS2 <code>libcgns.dll.a</code> is C-only; lacks <code>__cgns_MOD_*</code> Fortran module symbols required by <code>readin_CGNS.f90</code></td>
+        </tr>
+        <tr>
+          <td>9</td>
+          <td class="file-cell impact-high">src/mesh/mesh_connect.f90</td>
+          <td><span class="badge badge-guard">Bug Fix</span></td>
+          <td>Added <code>ConnectMesh%tmp</code> NodeID and <code>%ind</code> fallbacks after <code>ASSOCIATED()</code> in both slave and master periodic branches</td>
+          <td>GFortran 15 on Windows returns false from two-argument <code>ASSOCIATED()</code> for same-target pointers in some pointer-of-struct aliasing patterns after <code>GlobalUniqueNodes</code></td>
+        </tr>
+        <tr>
+          <td>10</td>
+          <td class="file-cell impact-high">src/mesh/mesh_vars.f90</td>
+          <td><span class="badge badge-guard">Bug Fix</span></td>
+          <td>Initialize <code>Node%tmp=0</code> in <code>getNewNode()</code></td>
+          <td>Windows heap does not zero-fill allocated memory; uninitialized <code>%tmp</code> in face-center nodes of <code>meshTemplate=3</code> caused false positive boundary-condition assignments to interior hex faces, creating spurious periodic master sides and breaking <code>SplitToHex</code> periodic meshes</td>
+        </tr>
+        <tr>
+          <td>11</td>
+          <td class="file-cell impact-medium">CMakePresets.json</td>
+          <td><span class="badge badge-new">Added</span></td>
+          <td>Added <code>windows-ucrt64</code> (CGNS) and <code>windows-ucrt64-nocgns</code> configure presets with correct linker flags</td>
+          <td>No Windows-specific presets existed; users had to set all options manually</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-success" style="margin-top:20px;">
+      <strong>Files with zero Windows-specific changes:</strong>
+      <code>cmake/SetLinker.cmake</code>,
+      <code>cmake/SetMachine.cmake</code>,
+      <code>cmake/SetBuildType.cmake</code>,
+      <code>cmake/SetGitHook.cmake</code>,
+      <code>CMakeLists.txt</code> (root),
+      all <code>src/</code> Fortran source files except <code>globals.f90</code>, <code>src/mesh/mesh_vars.f90</code>, and <code>src/mesh/mesh_connect.f90</code>.
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  HOPR Windows Port &mdash; Change Documentation &bull; Updated 25 April 2026 &bull;
+  Source tree: <code>C:/Data/PRJ/hopr-win/hopr-master</code>
+</footer>
+
+</body>
+</html>
